@@ -7,10 +7,11 @@ info:
     Includes endpoints for authentication, room management, questions and leaderboard.
     Realtime Socket.io events are listed under the `Socket.io (realtime)` tag descriptions.
 servers:
+  - url: https://quiz-u0y7.onrender.com
+    description: Production server
   - url: http://localhost:5000
-    description: Local development server
-  - url: https://your-production-domain.com
-    description: Production server (replace with your URL)
+    description: Local dev
+
 tags:
   - name: Auth
     description: Register and login users (JWT authentication)
