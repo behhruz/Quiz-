@@ -1,0 +1,240 @@
+openapi: 3.0.3
+info:
+  title: Quiz Game API
+  version: 1.0.0
+  description: |
+    REST API for a Kahoot-like quiz game (Node.js / Express / MongoDB / Socket.io).
+    Includes endpoints for authentication, room management, questions and leaderboard.
+    Realtime Socket.io events are listed under the `Socket.io (realtime)` tag descriptions.
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+  - url: https://your-production-domain.com
+    description: Production server (replace with your URL)
+tags:
+  - name: Auth
+    description: Register and login users (JWT authentication)
+  - name: Room
+    description: Create/join rooms and view leaderboard
+  - name: Question
+    description: Add questions to a room
+  - name: Socket.io (realtime)
+    description: |
+      The realtime flows use Socket.io (not HTTP). Events:
+        - join-room: { roomCode, userId }
+        - start-quiz: { roomCode }
+        - submit-answer: { roomCode, userId, questionId, answerIndex }
+        - get-leaderboard: { roomCode }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: behruz
+        password:
+          type: string
+          example: 123456
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: behruz
+        password:
+          type: string
+          example: 123456
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        userId:
+          type: string
+    CreateRoomRequest:
+      type: object
+      required: [hostId]
+      properties:
+        hostId:
+          type: string
+          description: MongoDB user id of the host
+    CreateRoomResponse:
+      type: object
+      properties:
+        roomCode:
+          type: string
+          example: AB12CD
+    JoinRoomRequest:
+      type: object
+      required: [userId, roomCode]
+      properties:
+        userId:
+          type: string
+        roomCode:
+          type: string
+    JoinRoomResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        roomId:
+          type: string
+    QuestionRequest:
+      type: object
+      required: [roomId, text, options, correctIndex]
+      properties:
+        roomId:
+          type: string
+        text:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+        correctIndex:
+          type: integer
+          description: index of correct option in the options array (0-based)
+    GenericMessage:
+      type: object
+      properties:
+        message:
+          type: string
+    LeaderboardEntry:
+      type: object
+      properties:
+        place:
+          type: integer
+        user:
+          type: string
+        points:
+          type: integer
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+        '400':
+          description: Validation or duplicate error
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Login and obtain JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          description: Invalid credentials
+  /room/create:
+    post:
+      tags: [Room]
+      summary: Create a new room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '200':
+          description: Room created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRoomResponse'
+  /room/join:
+    post:
+      tags: [Room]
+      summary: Join a room by code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinRoomRequest'
+      responses:
+        '200':
+          description: Joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinRoomResponse'
+        '404':
+          description: Room not found
+  /room/{roomCode}/leaderboard:
+    get:
+      tags: [Room]
+      summary: Get leaderboard for a room (sorted desc by points)
+      parameters:
+        - in: path
+          name: roomCode
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaderboardEntry'
+        '404':
+          description: Room not found
+  /question/add:
+    post:
+      tags: [Question]
+      summary: Add a question to a room
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuestionRequest'
+      responses:
+        '200':
+          description: Question added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenericMessage'
+        '404':
+          description: Room not found
+security:
+  - bearerAuth: []
+
+x-notes:
+  setup:
+    - Make sure to replace the JWT secret in production and store it in env vars.
+    - Socket.io real-time events are not part of OpenAPI paths; see the Socket.io tag for details.

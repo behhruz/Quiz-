@@ -1,26 +1,27 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const http = require("http");
 const cors = require("cors");
+
+const swaggerUi = require("swagger-ui-express");
+const YAML = require("yamljs");
 
 const authRoutes = require("./routes/auth.routes");
 const roomRoutes = require("./routes/room.routes");
 const questionRoutes = require("./routes/question.routes");
-const socketSetup = require("./socket");
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
+// Swagger yuklash
+const swaggerDocument = YAML.load("./src/docs/swagger.yaml");
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+// Routes
 app.use("/auth", authRoutes);
 app.use("/room", roomRoutes);
 app.use("/question", questionRoutes);
 
-mongoose.connect("mongodb+srv://bsotimboyev10_db_user:PTS8F9VjGoXSvlBH@cluster0.d5fhs8j.mongodb.net/")
-  .then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
+const PORT = process.env.PORT || 5000;
 
-const server = http.createServer(app);
-socketSetup(server);
-
-server.listen(5000, () => console.log("Server running on port 5000"));
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
