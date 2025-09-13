@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(cors());
 
 // Swagger yuklash
-const swaggerDocument = YAML.load("./src/docs/swagger.yaml");
+const swaggerDocument = YAML.load(__dirname + "/docs/swagger.yaml");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Routes
